@@ -1,0 +1,49 @@
+name: Build Hikari LLVM (Windows x64)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+
+      - name: Configure LLVM
+        shell: pwsh
+        run: |
+          mkdir build
+          cmake -S llvm -B build -G Ninja `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DLLVM_ENABLE_PROJECTS="clang" `
+            -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64" `
+            -DLLVM_ENABLE_ZSTD=OFF `
+            -DLLVM_INCLUDE_TESTS=OFF `
+            -DLLVM_INCLUDE_EXAMPLES=OFF `
+            -DLLVM_INCLUDE_UTILS=OFF `
+            -DLLVM_INCLUDE_BENCHMARKS=OFF `
+            -DLLVM_BUILD_TOOLS=OFF
+
+      - name: Build LLVM
+        shell: pwsh
+        run: |
+          cmake --build build --config Release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hikari-llvm-windows-x64
+          path: build
